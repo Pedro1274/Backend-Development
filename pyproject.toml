@@ -18,7 +18,10 @@ build-backend = "poetry.core.masonry.api"
 
 [dependency-groups]
 dev = [
-    "ruff (>=0.15.20,<0.16.0)"
+    "ruff (>=0.15.20,<0.16.0)",
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "taskipy (>=1.14.1,<2.0.0)"
 ]
 
 [tool.ruff]
@@ -32,3 +35,16 @@ select = ['I', 'F', 'E', 'W', 'PL', 'PT']
 [tool.ruff.format]
 preview = true
 quote-style = 'single'
+
+[tool.pytest.ini_options]
+pythonpath = "."
+addopts = '-p no:warnings'
+
+[tool.taskipy.tasks]
+lint = 'ruff check'
+pre_format = 'ruff check --fix'
+format = 'ruff format'
+run = 'fastapi dev backend/app.py'
+pre_test = 'task lint'
+test = 'pytest -s -x --cov=backend --v'
+post_test = 'coverage html'
