@@ -1,21 +1,14 @@
 from http import HTTPStatus
 
-from fastapi.testclient import TestClient
 
-from backend.app import app
-
-
-def test_root_deve_retornar_ola_mundo():
-    client = TestClient(app)
-
+def test_root_deve_retornar_ola_mundo(client):
     response = client.get('/')
 
     assert response.json() == {'message': 'Hello, world!'}
     assert response.status_code == HTTPStatus.OK
 
 
-def test_pretty_root_deve_retornar_ola_mundo():
-    client = TestClient(app)
+def test_pretty_root_deve_retornar_ola_mundo(client):
 
     response = client.get('/pretty_root')
 
@@ -32,8 +25,7 @@ def test_pretty_root_deve_retornar_ola_mundo():
     assert response.text.strip() == expected_html.strip()
 
 
-def test_create_user():
-    client = TestClient(app)
+def test_create_user(client):
     response = client.post(
         '/users/',
         json={
