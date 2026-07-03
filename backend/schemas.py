@@ -6,12 +6,14 @@ class Message(BaseModel):
 
 
 class UserPublic(BaseModel):
+    id: int
     username: str
     email: EmailStr
 
 
-class UserSchema(UserPublic):
-    id: int
+class UserSchema(BaseModel):
+    username: str
+    email: EmailStr
     password: str
 
 
