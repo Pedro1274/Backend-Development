@@ -1,7 +1,7 @@
 from fastapi import FastAPI  # ty:ignore[unresolved-import]
 from fastapi.responses import HTMLResponse
 
-from backend.schemas import Message, UserDB, UserPublic, UserSchema
+from backend.schemas import Message, UserDB, UserList, UserPublic, UserSchema
 
 app = FastAPI(title='Our cool and fast API')
 database = []
@@ -35,3 +35,8 @@ def create_user(user: UserSchema):
     database.append(user_with_id)
 
     return user_with_id
+
+
+@app.get('/users/', status_code=200, response_model=UserList)
+def get_users():
+    return {'users': database}
