@@ -1,3 +1,5 @@
+from sqlalchemy import select
+
 from backend.models import User
 
 
@@ -6,5 +8,7 @@ def test_create_user(session):
 
     session.add(user)
     session.commit()
+
+    user = session.scalar(select(User).where(User.password == '1234'))
 
     assert user.password == '1234'
