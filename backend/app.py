@@ -1,10 +1,19 @@
-from fastapi import FastAPI, HTTPException  # ty:ignore[unresolved-import]
-from fastapi.responses import HTMLResponse
+from http import HTTPStatus
 
-from backend.schemas import Message, UserDB, UserList, UserPublic, UserSchema
+from fastapi import (  # ty:ignore[unresolved-import]
+    Depends,
+    FastAPI,
+    HTTPException,
+)
+from fastapi.responses import HTMLResponse
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
+from backend.database import get_session
+from backend.models import User
+from backend.schemas import Message, UserList, UserPublic, UserSchema
 
 app = FastAPI(title='Our cool and fast API')
-database = []
 
 
 @app.get('/', status_code=200, response_model=Message)
@@ -26,42 +35,81 @@ def read_pretty_root():
 
 
 @app.post('/users/', status_code=201, response_model=UserPublic)
-def create_user(user: UserSchema):
-    user_with_id = UserDB(**user.model_dump(), id=len(database) + 1)
+def create_user(user: UserSchema, session=Depends(get_session)):
 
-    database.append(user_with_id)
+    db_user = session.scalar(
+        select(User).where(
+            (User.username == user.username) | (User.email == user.email)
+        )
+    )
 
-    return user_with_id
+    if db_user:
+        if db_user.username == user.username:
+            raise HTTPException(
+                detail='Usuário já existente!', status_code=HTTPStatus.CONFLICT
+            )
+        elif db_user.email == user.email:
+            raise HTTPException(
+                detail='Email já existente!', status_code=HTTPStatus.CONFLICT
+            )
+
+    db_user = User(
+        username=user.username, password=user.password, email=user.email
+    )
+
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+
+    return db_user
 
 
 @app.get('/users/', status_code=200, response_model=UserList)
-def get_users():
-    return {'users': database}
+def get_users(limit: int = 10, offset: int = 0, session=Depends(get_session)):
+    users = session.scalars(select(User).limit(limit).offset(offset))
+    return {'users': users}
 
 
 @app.get('/users/{user_id}', response_model=UserPublic)
-def get_single_user(user_id: int):
-    if user_id < 1 or user_id > len(database):
-        raise HTTPException(status_code=404, detail='Usuário não encontrado!')
-
-    return database[user_id - 1]
+def get_single_user(user_id: int, session=Depends(get_session)):
+    user_db = session.scalar(select(User).where(User.id == user_id))
+    if not user_db:
+        raise HTTPException(
+            detail='Usuário não encontrado', status_code=HTTPStatus.NOT_FOUND
+        )
+    return user_db
 
 
 @app.put('/users/{user_id}', response_model=UserPublic)
-def update_user(user_id: int, user: UserSchema):
-    user_with_id = UserDB(**user.model_dump(), id=user_id)
+def update_user(user_id: int, user: UserSchema, session=Depends(get_session)):
+    user_db = session.scalar(select(User).where(User.id == user_id))
+    if not user_db:
+        raise HTTPException(
+            detail='Usuário não encontrado', status_code=HTTPStatus.NOT_FOUND
+        )
+    try:
+        user_db.email = user.email
+        user_db.username = user.username
+        user_db.password = user.password
+        session.commit()
+        session.refresh(user_db)
 
-    if user_id < 1 or user_id > len(database):
-        raise HTTPException(status_code=404, detail='Usuário não encontrado!')
+        return user_db
+    except IntegrityError:
+        raise HTTPException(
+            detail='Usuário ou Email já existentes!',
+            status_code=HTTPStatus.CONFLICT,
+        )
 
-    database[user_id - 1] = user_with_id
 
-    return user_with_id
+@app.delete('/users/{user_id}', response_model=Message)
+def delete_user(user_id: int, session=Depends(get_session)):
+    user_db = session.scalar(select(User).where(User.id == user_id))
+    if not user_db:
+        raise HTTPException(
+            detail='Usuário não encontrado', status_code=HTTPStatus.NOT_FOUND
+        )
+    session.delete(user_db)
+    session.commit()
 
-
-@app.delete('/users/{user_id}', response_model=UserPublic)
-def delete_user(user_id: int):
-    if user_id < 1 or user_id > len(database):
-        raise HTTPException(status_code=404, detail='Usuário não encontrado!')
-
-    return database.pop(user_id - 1)
+    return {'message': 'Usuário deletado com sucesso!'}
