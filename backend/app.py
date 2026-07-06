@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from backend.database import get_session
 from backend.models import User
 from backend.schemas import Message, UserList, UserPublic, UserSchema
+from backend.security import get_password_hash
 
 app = FastAPI(title='Our cool and fast API')
 
@@ -54,7 +55,7 @@ def create_user(user: UserSchema, session=Depends(get_session)):
             )
 
     db_user = User(
-        username=user.username, password=user.password, email=user.email
+        username=user.username, password=get_password_hash(user.password), email=user.email
     )
 
     session.add(db_user)
@@ -90,7 +91,7 @@ def update_user(user_id: int, user: UserSchema, session=Depends(get_session)):
     try:
         user_db.email = user.email
         user_db.username = user.username
-        user_db.password = user.password
+        user_db.password = get_password_hash(user.password)
         session.commit()
         session.refresh(user_db)
 
