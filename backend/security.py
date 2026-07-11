@@ -11,12 +11,12 @@ from sqlalchemy import select
 from backend.database import get_session
 from backend.models import User
 
-SECRET_KEY = '1234'
+SECRET_KEY = 'bf47ce7e00728440b8ad68d433c59f0fb0be56102fd4ca01ad7d5cd1d9c53f9d'
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = PasswordHash.recommended()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/token')
 
 
 def get_password_hash(password: str):
