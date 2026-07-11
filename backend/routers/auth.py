@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Annotated
 
 from fastapi import (  # ty:ignore[unresolved-import]
     APIRouter,
@@ -7,6 +8,7 @@ from fastapi import (  # ty:ignore[unresolved-import]
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from backend.database import get_session
 from backend.models import User
@@ -17,12 +19,14 @@ from backend.security import (
 )
 
 router = APIRouter(prefix='/auth', tags=['auth'])
+FormData = Annotated[OAuth2PasswordRequestForm, Depends()]
+Session = Annotated[Session, Depends(get_session)]
 
 
 @router.post('/token', response_model=Token)
 def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    session=Depends(get_session),
+    form_data: FormData,
+    session: Session,
 ):
     user = session.scalar(select(User).where(User.email == form_data.username))
     if not user:

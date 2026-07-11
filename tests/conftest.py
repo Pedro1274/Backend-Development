@@ -14,6 +14,22 @@ from backend.security import get_password_hash
 
 
 @pytest.fixture
+def session():
+    engine = create_engine(
+        'sqlite:///:memory:',
+        connect_args={'check_same_thread': False},
+        poolclass=StaticPool,
+    )
+    table_registry.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        yield session
+
+    table_registry.metadata.drop_all(engine)
+    engine.dispose()
+
+
+@pytest.fixture
 def client(session):
     def get_session_override():
         return session
@@ -23,23 +39,6 @@ def client(session):
         yield client
 
     app.dependency_overrides.clear()
-
-
-@pytest.fixture
-def session():
-    engine = create_engine(
-        'sqlite:///:memory:',
-        connect_args={'check_same_thread': False},
-        poolclass=StaticPool,
-    )
-
-    table_registry.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        yield session
-
-    table_registry.metadata.drop_all(engine)
-    engine.dispose()
 
 
 @contextmanager
@@ -63,7 +62,7 @@ def mock_db_time():
 
 
 @pytest.fixture
-def user(session: Session):
+def user(session):
     password = '1234'
 
     user = User(
