@@ -11,9 +11,7 @@ def test_jwt():
     token = create_access_token(data)
 
     decoded = decode(
-        token,
-        settings.SECRET_KEY,
-        algorithms=[settings.ALGORITHM]
+        token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
     )
 
     assert decoded['test'] == data['test']

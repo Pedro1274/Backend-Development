@@ -9,7 +9,7 @@ from fastapi import (  # ty:ignore[unresolved-import]
 )
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_session
 from backend.models import User
@@ -26,15 +26,15 @@ from backend.security import (
 )
 
 router = APIRouter(prefix='/users', tags=['users'])
-Session = Annotated[Session, Depends(get_session)]
+Session = Annotated[AsyncSession, Depends(get_session)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 FilterUsers = Annotated[FilterPage, Query()]
 
 
 @router.post('/', status_code=201, response_model=UserPublic)
-def create_user(user: UserSchema, session: Session):
+async def create_user(user: UserSchema, session: Session):
 
-    db_user = session.scalar(
+    db_user = await session.scalar(
         select(User).where(
             (User.username == user.username) | (User.email == user.email)
         )
@@ -57,25 +57,26 @@ def create_user(user: UserSchema, session: Session):
     )
 
     session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
+    await session.commit()
+    await session.refresh(db_user)
 
     return db_user
 
 
 @router.get('/', status_code=200, response_model=UserList)
-def get_users(
+async def get_users(
     session: Session, current_user: CurrentUser, filter_users: FilterUsers
 ):
-    users = session.scalars(
+    result = await session.scalars(
         select(User).limit(filter_users.limit).offset(filter_users.offset)
-    ).all()
+    )
+    users = result.all()
     return {'users': [UserPublic.model_validate(user) for user in users]}
 
 
 @router.get('/{user_id}', response_model=UserPublic)
-def get_single_user(user_id: int, session: Session):
-    user_db = session.scalar(select(User).where(User.id == user_id))
+async def get_single_user(user_id: int, session: Session):
+    user_db = await session.scalar(select(User).where(User.id == user_id))
     if not user_db:
         raise HTTPException(
             detail='Usuário não encontrado', status_code=HTTPStatus.NOT_FOUND
@@ -84,7 +85,7 @@ def get_single_user(user_id: int, session: Session):
 
 
 @router.put('/{user_id}', response_model=UserPublic)
-def update_user(
+async def update_user(
     user_id: int,
     user: UserSchema,
     session: Session,
@@ -99,8 +100,8 @@ def update_user(
         current_user.email = user.email
         current_user.username = user.username
         current_user.password = get_password_hash(user.password)
-        session.commit()
-        session.refresh(current_user)
+        await session.commit()
+        await session.refresh(current_user)
 
         return current_user
     except IntegrityError:
@@ -111,7 +112,7 @@ def update_user(
 
 
 @router.delete('/{user_id}', response_model=Message)
-def delete_user(
+async def delete_user(
     user_id: int,
     session: Session,
     current_user: CurrentUser,
@@ -121,7 +122,7 @@ def delete_user(
             status_code=HTTPStatus.FORBIDDEN,
             detail='Sem permissões suficientes!',
         )
-    session.delete(current_user)
-    session.commit()
+    await session.delete(current_user)
+    await session.commit()
 
     return {'message': 'Usuário deletado com sucesso!'}
