@@ -3,13 +3,14 @@ from fastapi import (  # ty:ignore[unresolved-import]
 )
 from fastapi.responses import HTMLResponse
 
-from backend.routers import auth, users
+from backend.routers import auth, tasks, users
 from backend.schemas import Message
 
 app = FastAPI(title='Our cool and fast API')
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(tasks.router)
 
 
 @app.get('/', status_code=200, response_model=Message)
