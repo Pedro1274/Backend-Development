@@ -24,8 +24,8 @@ def test_create_same_username_integrity_error(client, user):
     response_update = client.post(
         '/users/',
         json={
-            'username': 'Alice',
-            'email': 'naoeemaildaalice@test.com',
+            'username': 'test2',
+            'email': 'test2@test.com',
             'password': '1234',
         },
     )
@@ -38,8 +38,8 @@ def test_create_same_email_integrity_error(client, user):
     response_update = client.post(
         '/users/',
         json={
-            'username': 'naoeaalice',
-            'email': 'Alice@alice.com',
+            'username': 'test',
+            'email': 'test3@test.com',
             'password': '1234',
         },
     )
@@ -62,8 +62,8 @@ def test_read_single_user(client, user):
     response = client.get(f'/users/{user.id}')
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        'username': 'Alice',
-        'email': 'Alice@alice.com',
+        'username': 'test5',
+        'email': 'test5@test.com',
         'id': 1,
     }
 
@@ -93,9 +93,9 @@ def test_update_user(client, user, token):
     }
 
 
-def test_update_user_not_found(client, token):
+def test_update_user_not_found(client, other_user, token):
     response = client.put(
-        '/users/2',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'bob',
@@ -121,9 +121,9 @@ def test_delete_user(client, user, token):
     assert response.json() == {'message': 'Usuário deletado com sucesso!'}
 
 
-def test_delete_user_not_found(client, token):
+def test_delete_user_not_found(client, other_user, token):
     response = client.delete(
-        '/users/2',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
     )
 

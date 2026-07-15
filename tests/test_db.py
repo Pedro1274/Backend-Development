@@ -16,9 +16,7 @@ async def test_create_user(session: AsyncSession, mock_db_time):
         session.add(user)
         await session.commit()
 
-    user = await session.scalar(
-        select(User).where(User.password == '1234')
-    )
+    user = await session.scalar(select(User).where(User.password == '1234'))
 
     assert asdict(user) == {
         'id': 1,
