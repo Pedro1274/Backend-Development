@@ -40,6 +40,12 @@ class FilterTask(FilterPage):
     state: TaskState | None = None
 
 
+class TaskUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    state: TaskState | None = None
+
+
 class TaskSchema(BaseModel):
     title: str
     description: str

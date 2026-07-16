@@ -1,13 +1,20 @@
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_session
 from backend.models import Task, User
-from backend.schemas import FilterTask, TaskList, TaskPublic, TaskSchema
+from backend.schemas import (
+    FilterTask,
+    Message,
+    TaskList,
+    TaskPublic,
+    TaskSchema,
+    TaskUpdate,
+)
 from backend.security import get_current_user
 
 router = APIRouter(tags=['tasks'], prefix='/tasks')
@@ -56,3 +63,43 @@ async def get_task(
     )
 
     return {'tasks': tasks.all()}
+
+
+@router.patch('/{task_id}', response_model=TaskPublic)
+async def patch_task(
+    task_id: int, session: Session, user: CurrentUser, task: TaskUpdate
+):
+    db_task = await session.scalar(
+        select(Task).where(Task.user_id == user.id, Task.id == task_id)
+    )
+
+    if not db_task:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail='Tarefa não encontrada!'
+        )
+
+    for key, value in task.model_dump(exclude_unset=True).items():
+        setattr(db_task, key, value)
+
+    session.add(db_task)
+    await session.commit()
+    await session.refresh(db_task)
+
+    return db_task
+
+
+@router.delete('/{task_id}', response_model=Message)
+async def delete_task(task_id: int, session: Session, user: CurrentUser):
+    task = await session.scalar(
+        select(Task).where(Task.user_id == user.id, Task.id == task_id)
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail='Tarefa não encontrada!'
+        )
+
+    await session.delete(task)
+    await session.commit()
+
+    return {'message': 'Tarefa deletada com sucesso!'}

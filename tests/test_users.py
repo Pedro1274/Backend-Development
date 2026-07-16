@@ -24,7 +24,7 @@ def test_create_same_username_integrity_error(client, user):
     response_update = client.post(
         '/users/',
         json={
-            'username': 'test2',
+            'username': user.username,
             'email': 'test2@test.com',
             'password': '1234',
         },
@@ -39,7 +39,7 @@ def test_create_same_email_integrity_error(client, user):
         '/users/',
         json={
             'username': 'test',
-            'email': 'test3@test.com',
+            'email': user.email,
             'password': '1234',
         },
     )
@@ -62,8 +62,8 @@ def test_read_single_user(client, user):
     response = client.get(f'/users/{user.id}')
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        'username': 'test5',
-        'email': 'test5@test.com',
+        'username': user.username,
+        'email': user.email,
         'id': 1,
     }
 
