@@ -146,7 +146,7 @@ def test_patch_task_error(client, token):
     response = client.patch(
         '/tasks/7',
         json={'title': 'teste!'},
-        headers={'Authorization': f'Bearer {token}'}
+        headers={'Authorization': f'Bearer {token}'},
     )
 
     assert response.status_code == HTTPStatus.NOT_FOUND

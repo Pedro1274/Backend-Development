@@ -56,7 +56,7 @@ async def get_task(
         )
 
     if task_filter.state:
-        query = query.filter(Task.state.contains(task_filter.state))
+        query = query.filter(Task.state == task_filter.state)
 
     tasks = await session.scalars(
         query.limit(task_filter.limit).offset(task_filter.offset)
